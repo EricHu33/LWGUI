@@ -90,6 +90,8 @@ namespace LWGUI
 						if (propStaticData.parent.parent != null)
 							EditorGUI.indentLevel++;
 					}
+					
+					
 
 					// Advanced Header
 					if (propStaticData.isAdvancedHeader && !propStaticData.isAdvancedHeaderProperty)
@@ -103,9 +105,17 @@ namespace LWGUI
 							continue;
 						}
 					}
-
+					
+					if (!MetaDataHelper.GetPropertyAcitveStatus(prop, material, this))
+					{
+						GUI.enabled = false;
+					}
 					DrawProperty(prop);
-
+					if (!MetaDataHelper.GetPropertyAcitveStatus(prop, material, this))
+					{
+						GUI.enabled = true;
+					}
+					
 					RevertableHelper.SetRevertableGUIWidths();
 					EditorGUI.indentLevel = indentLevel;
 				}

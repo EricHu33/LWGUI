@@ -41,6 +41,15 @@ namespace LWGUI
 		public CompareFunction compareFunction    = CompareFunction.Equal;
 		public float           value              = 0;
 	}
+	
+	public class ActiveIfData
+	{
+		public LogicalOperator logicalOperator    = LogicalOperator.And;
+		public string          targetPropertyName = string.Empty;
+		public CompareFunction compareFunction    = CompareFunction.Equal;
+		public float           value              = 0;
+	}
+
 
 	/// <summary>
 	/// All static metadata for a Property, determined after the Shader is compiled.
@@ -67,7 +76,8 @@ namespace LWGUI
 		public bool             isHidden                  = false;                  // [Hidden]
 		public bool             isReadOnly                = false;                  // [ReadOnly]
 		public List<ShowIfData> showIfDatas               = new List<ShowIfData>(); // [ShowIf()]
-
+		public List<ActiveIfData> activeIfDatas           = new List<ActiveIfData>(); // [ActiveIf()]
+		
 		// Metadata
 		public List<string>         extraPropNames          = new List<string>();	// Other Props that have been associated
 		public string               helpboxMessages         = string.Empty;
@@ -346,7 +356,7 @@ namespace LWGUI
 		public bool             hasChildrenModified     = false;        // Are Children properties modified in the material?
 		public bool             hasRevertChanged        = false;        // Used to call property EndChangeCheck()
 		public bool             isShowing               = true;			// ShowIf() result
-
+		public bool             isActive                = true;         // ActiveIf() result
 	}
 
 	public class PersetDynamicData
@@ -505,6 +515,44 @@ namespace LWGUI
 							break;
 					}
 				}
+				
+				foreach (var activeIfData in propStaticData.activeIfDatas)
+				{
+					var propCurrentValue = propertyDatas[activeIfData.targetPropertyName].property.floatValue;
+					bool compareResult;
+
+					switch (activeIfData.compareFunction)
+					{
+						case CompareFunction.Less:
+							compareResult = propCurrentValue < activeIfData.value;
+							break;
+						case CompareFunction.LessEqual:
+							compareResult = propCurrentValue <= activeIfData.value;
+							break;
+						case CompareFunction.Greater:
+							compareResult = propCurrentValue > activeIfData.value;
+							break;
+						case CompareFunction.NotEqual:
+							compareResult = propCurrentValue != activeIfData.value;
+							break;
+						case CompareFunction.GreaterEqual:
+							compareResult = propCurrentValue >= activeIfData.value;
+							break;
+						default:
+							compareResult = propCurrentValue == activeIfData.value;
+							break;
+					}
+
+					switch (activeIfData.logicalOperator)
+					{
+						case LogicalOperator.And:
+							propDynamicData.isActive &= compareResult;
+							break;
+						case LogicalOperator.Or:
+							propDynamicData.isActive |= compareResult;
+							break;
+					}
+				}
 			}
 		}
 
@@ -590,6 +638,20 @@ namespace LWGUI
 				return string.Empty;
 			else
 				return prop.displayName.Substring(0, minIndex);
+		}
+		
+		public static bool GetPropertyAcitveStatus(MaterialProperty prop, Material material, LWGUI lwgui)
+		{
+			bool result = true;
+			var propertyStaticData = lwgui.perShaderData.propertyDatas[prop.name];
+			var propertyDynamicData = lwgui.perFrameData.propertyDatas[prop.name];
+			var displayModeData = lwgui.perShaderData.displayModeData;
+			if (!propertyDynamicData.isActive)
+			{
+				result = false;
+			}
+
+			return result;
 		}
 
 		public static bool GetPropertyVisibility(MaterialProperty prop, Material material, LWGUI lwgui)

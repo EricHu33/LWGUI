@@ -1418,4 +1418,48 @@ namespace LWGUI
 
 		public override void DrawProp(Rect position, MaterialProperty prop, GUIContent label, MaterialEditor editor) { }
 	}
+
+	public class ActiveIfDecorator : SubDrawer
+	{
+		private ActiveIfData _activeIfData = new ActiveIfData();
+		private readonly Dictionary<string, string> _compareFunctionLUT = new Dictionary<string, string>()
+		{
+			{ "Less",			"Less" },
+			{ "L",				"Less" },
+			{ "Equal",			"Equal" },
+			{ "E",				"Equal" },
+			{ "LessEqual",		"LessEqual" },
+			{ "LEqual",			"LessEqual" },
+			{ "LE",				"LessEqual" },
+			{ "Greater",		"Greater" },
+			{ "G",				"Greater" },
+			{ "NotEqual",		"NotEqual" },
+			{ "NEqual",			"NotEqual" },
+			{ "NE",				"NotEqual" },
+			{ "GreaterEqual",	"GreaterEqual" },
+			{ "GEqual",			"GreaterEqual" },
+			{ "GE",				"GreaterEqual" },
+		};
+
+		public ActiveIfDecorator(string propName, string comparisonMethod, float value) : this("And", propName, comparisonMethod, value) { }
+		public ActiveIfDecorator(string logicalOperator, string propName, string compareFunction, float value)
+		{
+			_activeIfData.logicalOperator = logicalOperator.ToLower() == "or" ? LogicalOperator.Or : LogicalOperator.And;
+			_activeIfData.targetPropertyName = propName;
+			if (!_compareFunctionLUT.ContainsKey(compareFunction) || !Enum.IsDefined(typeof(CompareFunction), _compareFunctionLUT[compareFunction]))
+				Debug.LogError("Invalid compareFunction: '" + compareFunction + "', Must be one of the following: Less (L) | Equal (E) | LessEqual (LEqual / LE) | Greater (G) | NotEqual (NEqual / NE) | GreaterEqual (GEqual / GE).");
+			else
+				_activeIfData.compareFunction = (CompareFunction)Enum.Parse(typeof(CompareFunction), _compareFunctionLUT[compareFunction]);
+			_activeIfData.value = value;
+		}
+
+		protected override float GetVisibleHeight(MaterialProperty prop) { return 0; }
+
+		public override void BuildStaticMetaData(Shader inShader, MaterialProperty inProp, MaterialProperty[] inProps, PropertyStaticData inoutPropertyStaticData)
+		{
+			inoutPropertyStaticData.activeIfDatas.Add(_activeIfData);
+		}
+
+		public override void DrawProp(Rect position, MaterialProperty prop, GUIContent label, MaterialEditor editor) { }
+	}
 } //namespace LWGUI
